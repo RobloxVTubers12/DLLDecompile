@@ -12,7 +12,7 @@ local service = setmetatable({}, {
 })
 
 local function string_find(s, pattern)
-	return string.find(s, pattern, nil, true)
+	return string.find(s, pattern, 1, true)
 end
 
 local function ArrayToDictionary(t, hydridMode, valueOverride)
