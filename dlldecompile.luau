@@ -1823,7 +1823,7 @@ do
 				service.HttpService:JSONDecode(
 					game:HttpGet(
 						"https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/Mini-API-Dump.json",
-						true
+						false
 					)
 				).Classes
 			)
@@ -2151,7 +2151,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		AlternativeWritefile = not ArrayToDict({ "WRD", "Xeno", "Zorara" })[EXECUTOR_NAME],
 
 		OptionsAliases = { -- You can't really modify these as a user
-			DecompileTimeout = "0",
+			DecompileTimeout = "timeout",
 			FileName = "FilePath",
 			IgnoreArchivable = "IgnoreNotArchivable",
 			IgnoreDefaultProps = "IgnoreDefaultProperties",
@@ -2455,7 +2455,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 					end
 				end
 			end
-		elseif mode == "optimized" then -- ! Incompatible with .rbxmx (Model file) mode
+		elseif mode == "full" then -- ! Incompatible with .rbxmx (Model file) mode
 			-- if IsolatePlayers then
 			-- 	table.insert(_list_0, "Players")
 			-- end
