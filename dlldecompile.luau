@@ -11,10 +11,6 @@ local service = setmetatable({}, {
 	end,
 })
 
-local function string_find(s, pattern)
-	return string.find(s, pattern, nil, true)
-end
-
 local function ArrayToDictionary(t, hydridMode, valueOverride)
 	local tmp = {}
 
