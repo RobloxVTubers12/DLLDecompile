@@ -1,3 +1,6 @@
+script here: 
+
+
 local dlldecompile = loadstring(game:HttpGet("https://raw.githubusercontent.com/RobloxVTubers12/DLLDecompile/main/dlldecompile.luau", true), "dlldecompile")()
 local config = {
     mode = "custom",  -- Change this to invalid mode like "invalid" if you only want ExtraInstances. "optimized" mode is NOT supported with @Object option. Default: "custom"
