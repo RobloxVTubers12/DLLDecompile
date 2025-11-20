@@ -1680,15 +1680,15 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		ShowStatus = true,
 		SafeMode = false,
 		ShutdownWhenDone = false,
-		AntiIdle = true,
+		AntiIdle = false,
 		Anonymous = false,
-		ReadMe = true,
+		ReadMe = false,
 		FilePath = false,
 		Object = false,
 		IsModel = false,
 
-		IgnoreDefaultProperties = true,
-		IgnoreNotArchivable = true,
+		IgnoreDefaultProperties = false,
+		IgnoreNotArchivable = false,
 		IgnorePropertiesOfNotScriptsOnScriptsMode = false,
 		IgnoreSpecialProperties = ArrayToDict({ "Fluxus", "Delta", "Solara" })[EXECUTOR_NAME] or false, -- ! Please submit more Executors that crash on gethiddenproperty (with this disabled basically)
 
