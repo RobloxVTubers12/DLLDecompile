@@ -1666,14 +1666,14 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 			ModuleScript = nil,
 		},
 		IgnoreDefaultPlayerScripts = EXECUTOR_NAME ~= "Wave" and true,
-		SaveBytecode = false,
+		SaveBytecode = true,
 
 		IgnoreProperties = {},
 
 		IgnoreList = { "CoreGui", "CorePackages" },
 
 		ExtraInstances = {},
-		NilInstances = false,
+		NilInstances = true,
 		NilInstancesFixes = {},
 
 		SaveCacheInterval = 0x1600 * 10,
