@@ -41,7 +41,7 @@ local function ArrayToDictionary(t, hydridMode, valueOverride)
 	local tmp = {}
 
 	if hydridMode then
-		for some1, some2 in t do
+		for some1, some2 in pairs(t) do
 			if type(some1) == "number" then
 				tmp[some2] = valueOverride or true
 			elseif type(some2) == "table" then
@@ -51,7 +51,7 @@ local function ArrayToDictionary(t, hydridMode, valueOverride)
 			end
 		end
 	else
-		for _, key in t do
+		for _, key in ipairs(t) do
 			if type(key) == "string" then
 				tmp[key] = true
 			end
@@ -311,7 +311,7 @@ Binary_Descriptors = {
 		buffer.writeu32(b, offset, Keypoints_n)
 		offset += 4
 
-		for _, keypoint in Keypoints do
+		for _, keypoint in ipairs(Keypoints) do
 			buffer.writef32(b, offset, Envelope or keypoint.Envelope)
 			offset += 4
 			buffer.writef32(b, offset, keypoint.Time)
@@ -1147,7 +1147,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 					local attrs_sorted = {}
 					local attrs_formatted = table.clone(attrs)
 					-- warn(instance)
-					for attr, val in attrs do
+					for attr, val in pairs(attrs) do
 						attrs_n += 1
 						attrs_sorted[attrs_n] = attr
 
@@ -1174,7 +1174,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 					offset += 4
 
 					local Descriptors_string = Binary_Descriptors.string
-					for _, attr in attrs_sorted do
+					for _, attr in ipairs(attrs_sorted) do
 						local b_Name, Name_size = Descriptors_string(attr)
 
 						buffer.copy(b, offset, b_Name)
@@ -1243,9 +1243,9 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 									local RGB_components = { "R", "G", "B" }
 
-									for _, material in TERRAIN_MATERIAL_COLORS do
+									for _, material in ipairs(TERRAIN_MATERIAL_COLORS) do
 										local color = instance:GetMaterialColor(material)
-										for _, component in RGB_components do
+										for _, component in ipairs(RGB_components) do
 											buffer.writeu8(b, offset, math.floor(color[component] * 255)) -- ? math.floor seems unneeded but it makes it faster
 											offset += 1
 										end
@@ -1310,7 +1310,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 									local buffer_size = 3 -- Initial size
 
-									for _, group in collision_groups do
+									for _, group in ipairs(collision_groups) do
 										buffer_size += 7 + #group.name
 									end
 
@@ -1325,7 +1325,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 									buffer.writeu16(b, offset, col_groups_n * 10) -- Group count (not sure about u16)
 									offset += 2
 
-									for i, group in collision_groups do
+									for i, group in ipairs(collision_groups) do
 										local name, id, mask = group.name, i - 1, group.mask
 										local name_len = #name
 
@@ -1456,7 +1456,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 				OPTIONS.IsModel = true
 				CustomOptions = {}
 			else
-				for key, value in CustomOptions do
+				for key, value in pairs(CustomOptions) do
 					if OPTIONS[key] == nil then
 						local Option = CheckAlias(key)
 
@@ -1679,7 +1679,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 					end
 				end
 			end
-			for instance in unique do
+			for instance in pairs(unique) do
 				table.insert(tmp, instance)
 			end
 		end
@@ -1980,7 +1980,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		if Fix then
 			return Fix
 		elseif Fix == nil then
-			for class_name, fix in fixes do
+			for class_name, fix in pairs(fixes) do
 				if instance:IsA(class_name) then
 					return fix
 				end
@@ -2029,7 +2029,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		local Ref = Instance.new(className) -- ! Assuming anything passed here is Creatable
 		local Item = ReturnItem(Ref.ClassName, Ref)
 
-		for propertyName, val in properties do
+		for propertyName, val in pairs(properties) do
 			local Class, value, tag
 
 			-- TODO: Improve all sort of overrides & exceptions in the code (code below is awful)
@@ -2051,7 +2051,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 	end
 
 	local function save_hierarchy(hierarchy, queuedHierarchy)
-		for _, instance in hierarchy do
+		for _, instance in ipairs(hierarchy) do
 			if IgnoreNotArchivable and not instance.Archivable then
 				continue
 			end
@@ -2168,7 +2168,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 						proplist = GetInheritedProps(ClassNameOverride or ClassName)
 						inherited_properties[ClassNameOverride or ClassName] = proplist
 					end
-					for _, Property in proplist do
+					for _, Property in ipairs(proplist) do
 						local PropertyName = Property.Name
 
 						if IgnoreProperties[PropertyName] then
@@ -2193,7 +2193,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 								local Inheritors = NotScriptableFixes
 								while Inheritors do
 									local fix
-									for superclass, fixes in Inheritors do
+									for superclass, fixes in pairs(Inheritors) do
 										if instance:IsA(superclass) then
 											fix = fixes
 											break
@@ -2610,7 +2610,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		end
 		do
 			local tmp = { "<SharedStrings>" }
-			for identifier, value in SharedStrings do
+			for identifier, value in pairs(SharedStrings) do
 				table.insert(tmp, '<SharedString md5="' .. identifier .. '">' .. value .. "</SharedString>")
 			end
 
@@ -2786,7 +2786,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 			return debug.traceback(err)
 		end)
 		if Connections then
-			for _, connection in Connections do
+			for _, connection in ipairs(Connections) do
 				connection:Disconnect()
 			end
 		end
