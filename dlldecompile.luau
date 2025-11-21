@@ -1041,8 +1041,8 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		mode = "optimized",
 		noscripts = false,
 		scriptcache = true,
-		decomptype = "custom",
-		timeout = 10,
+		decomptype = "",
+		timeout = 0,
 		--* New:
 		__DEBUG_MODE = false,
 
@@ -1058,11 +1058,11 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 			service.TextChatService,
 			ModuleScript = nil,
 		},
-		SaveBytecode = false,
+		SaveBytecode = true,
 
-		IgnoreProperties = { "ScriptGuid", "UniqueId", "HistoryId" },
+		IgnoreProperties = {},
 
-		IgnoreList = { service.CoreGui, service.CorePackages },
+		IgnoreList = { CoreGui, CorePackages },
 
 		ExtraInstances = {},
 		NilInstances = false,
@@ -1072,13 +1072,13 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 		ShowStatus = true,
 		SafeMode = false,
 		Anonymous = false,
-		ReadMe = true,
+		ReadMe = false,
 		FilePath = false,
 		Object = false,
 		IsModel = false,
 
-		IgnoreDefaultProperties = true,
-		IgnoreNotArchivable = true,
+		IgnoreDefaultProperties = false,
+		IgnoreNotArchivable = false,
 		IgnorePropertiesOfNotScriptsOnScriptsMode = false,
 		IgnoreSpecialProperties = false,
 
@@ -1093,7 +1093,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 
 		-- ! Risky
 
-		IgnoreSharedStrings = true,
+		IgnoreSharedStrings = false,
 		SharedStringOverwrite = false,
 		TreatUnionsAsParts = EXECUTOR_NAME == "Solara", -- TODO Temporary true for Solara (once removed, remove Note from docs too)
 
