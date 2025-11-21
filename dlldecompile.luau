@@ -11,7 +11,7 @@ local function ArrayToDict(t, hydridMode, valueOverride, typeStrict)
 	local tmp = {}
 
 	if hydridMode then
-		for any1, any2 in t do
+		for any1, any2 in pairs(t) do
 			if type(any1) == "number" then
 				tmp[any2] = valueOverride or true
 			elseif type(any2) == "table" then
@@ -21,7 +21,7 @@ local function ArrayToDict(t, hydridMode, valueOverride, typeStrict)
 			end
 		end
 	else
-		for _, key in t do
+		for _, key in ipairs(t) do
 			if not typeStrict or typeStrict and type(key) == typeStrict then
 				tmp[key] = true
 			end
@@ -117,7 +117,7 @@ do -- * Load Region of Déjà Vu
 	end
 	local function benchmark(funcs, ...)
 		local ranking = table.create(2)
-		for i, f in funcs do
+		for i, f in ipairs(funcs) do
 			local start = os.clock()
 			for _ = 1, 50 do
 				f(...)
@@ -349,7 +349,7 @@ local function __COUNT_CAPABILITY_BITS(raw)
 	-- ! Seems like both tostring & .Contains ignore high / internal bits (anything above CapabilityControl): RemoteCommand, InternalTest, PluginOrOpenCloud, Assistant. They're present when created [...]
 	
 	local result = 0
-	for _, flag in string.split(tostring(raw), " | ") do
+	for _, flag in ipairs(string.split(tostring(raw), " | ")) do
 		local bit = CAPABILITY_BITS[flag]
 		if bit then
 			result += bit
@@ -361,7 +361,7 @@ end
 local function __COUNT_BITS(...) -- * Credits to Friend (you know yourself)
 	local Value = 0
 
-	for i, bit in { ... } do
+	for i, bit in ipairs({...}) do
 		if bit then
 			Value += 2 ^ (i - 1)
 		end
@@ -406,7 +406,7 @@ Binary_Descriptors = {
 			buffer.writeu32(b, 0, Keypoints_n)
 
 			local offset = 4
-			for _, keypoint in Keypoints do
+			for _, keypoint in ipairs(Keypoints) do
 				keypoint_handler(keypoint, b, offset)
 				offset += keypointSize
 			end
@@ -787,7 +787,7 @@ XML_Descriptors = {
 		return function(raw)
 			local sequence = ""
 
-			for _, keypoint in raw.Keypoints do
+			for _, keypoint in ipairs(raw.Keypoints) do
 				sequence ..= keypoint_handler(keypoint)
 			end
 
