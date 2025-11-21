@@ -19,7 +19,7 @@ local function ArrayToDictionary(t, hydridMode, valueOverride)
 	local tmp = {}
 
 	if hydridMode then
-		for some1, some2 in t do
+		for some1, some2 in pairs(t) do
 			if type(some1) == "number" then
 				tmp[some2] = valueOverride or true
 			elseif type(some2) == "table" then
@@ -29,7 +29,7 @@ local function ArrayToDictionary(t, hydridMode, valueOverride)
 			end
 		end
 	else
-		for _, key in t do
+		for _, key in ipairs(t) do
 			if type(key) == "string" then
 				tmp[key] = true
 			end
