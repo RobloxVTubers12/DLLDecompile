@@ -3,31 +3,135 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
--- Patch: force-disable filtering / ignore flags
--- This block was added to set common filtering/ignore globals to false at runtime.
--- It is intentionally non-invasive (uses pcall) and only affects globals.
-local function force_disable_filtering_and_ignores()
-	local names = {
-		"filtering", "Filtering", "filter", "Filter",
-		"ignores", "ignore", "Ignore", "IGNORED", "ignored",
-	}
-
-	for _, n in ipairs(names) do
-		pcall(function() _G[n] = false end)
+-- Patch (added): Force immediate saves and convert save-related settings to "full" in seconds.
+-- - Set timeout and timeout-like globals to 0.
+-- - Force save-related flags to save full games and convert numeric intervals to seconds (best-effort).
+-- - Non-invasive: uses pcall and only touches globals / obvious Settings tables; wrapped in pcall to avoid failing on unexpected environments.
+local function force_force_full_save_settings()
+	local function set_if_exists(tbl, key, val)
+		if tbl and type(tbl) == "table" and rawget(tbl, key) ~= nil then
+			pcall(function() tbl[key] = val end)
+			return true
+		end
+		return false
 	end
 
-	-- Also attempt to set any global whose name contains "ignore" or "filter" to false
-	for k, _ in pairs(_G) do
+	-- Common global names to set directly
+	local global_numeric_timeout_names = {
+		"timeout", "time_out", "TIMEOUT", "save_timeout", "SaveTimeout", "SAVE_TIMEOUT",
+		"save_interval", "saveinterval", "saveInterval", "SAVE_INTERVAL", "autosave_interval"
+	}
+	local global_save_flag_names = {
+		"save_full_game", "save_full", "SaveFull", "SAVE_FULL", "save_full_games", "savegames_full"
+	}
+	local global_save_mode_names = {
+		"save_mode", "SaveMode", "SAVE_MODE", "save_type", "SaveType"
+	}
+	local global_save_bool_names = {
+		"autosave", "auto_save", "AutoSave", "autosave_enabled", "save_enabled"
+	}
+
+	for _, n in ipairs(global_numeric_timeout_names) do
+		pcall(function() if _G[n] == nil or type(_G[n]) == "number" then _G[n] = 0 end end)
+	end
+
+	for _, n in ipairs(global_save_flag_names) do
+		pcall(function() _G[n] = true end)
+	end
+
+	for _, n in ipairs(global_save_mode_names) do
+		pcall(function() _G[n] = "Full" end)
+	end
+
+	for _, n in ipairs(global_save_bool_names) do
+		pcall(function() _G[n] = true end)
+	end
+
+	-- Best-effort: iterate all globals and adjust names containing "timeout" or "save"
+	for k, v in pairs(_G) do
 		if type(k) == "string" then
-			local low = string.lower(k)
-			if string.find(low, "ignore", 1, true) or string.find(low, "filter", 1, true) then
-				pcall(function() _G[k] = false end)
+			local lk = string.lower(k)
+			if string.find(lk, "timeout", 1, true) or string.find(lk, "time_out", 1, true) then
+				pcall(function()
+					if type(_G[k]) == "number" then
+						_G[k] = 0
+					else
+						_G[k] = 0
+					end
+				end)
+			elseif string.find(lk, "save", 1, true) and not string.find(lk, "path", 1, true) then
+				pcall(function()
+					if type(_G[k]) == "boolean" then
+						_G[k] = true
+					elseif type(_G[k]) == "string" then
+						_G[k] = "Full"
+					elseif type(_G[k]) == "number" then
+						-- If number looks like milliseconds, convert to seconds; if already small assume seconds, set to 0 (immediate) otherwise floor division
+						if _G[k] >= 1000 then
+							_G[k] = math.floor(_G[k] / 1000)
+						else
+							_G[k] = 0
+						end
+					end
+				end)
 			end
 		end
 	end
+
+	-- If a Settings-like table exists in globals, try to set expected fields
+	local candidate_settings_tables = { _G.Settings, _G.settings, _G.SaveSettings, _G.SaveConfig, _G.CONFIG }
+	for _, tbl in ipairs(candidate_settings_tables) do
+		if type(tbl) == "table" then
+			pcall(function()
+				-- Timeout / intervals
+				if rawget(tbl, "timeout") ~= nil or rawget(tbl, "TimeOut") ~= nil then
+					tbl.timeout = 0
+					tbl.TimeOut = 0
+				end
+				if rawget(tbl, "saveIntervalMs") ~= nil then
+					-- convert ms to seconds, but set to 0 (immediate) as requested
+					tbl.saveIntervalMs = 0
+				end
+				if rawget(tbl, "saveInterval") ~= nil then
+					tbl.saveInterval = 0
+				end
+				if rawget(tbl, "autosave_interval") ~= nil then
+					tbl.autosave_interval = 0
+				end
+
+				-- Force full save
+				if rawget(tbl, "save_mode") ~= nil then
+					tbl.save_mode = "Full"
+				end
+				if rawget(tbl, "saveType") ~= nil then
+					tbl.saveType = "Full"
+				end
+				if rawget(tbl, "saveFull") ~= nil then
+					tbl.saveFull = true
+				end
+				if rawget(tbl, "saveFullGame") ~= nil then
+					tbl.saveFullGame = true
+				end
+
+				-- enable autosave-like booleans
+				if rawget(tbl, "autosave") ~= nil then
+					tbl.autosave = true
+				end
+				if rawget(tbl, "autoSave") ~= nil then
+					tbl.autoSave = true
+				end
+			end)
+		end
+	end
+
+	-- If script refers to a local variable "timeout" in this chunk, we can't reliably change local values from here;
+	-- but we can expose a canonical global that code can check: FORCE_SAVE_TIMEOUT = 0 and FORCE_SAVE_MODE = "Full"
+	pcall(function() _G.FORCE_SAVE_TIMEOUT = 0 end)
+	pcall(function() _G.FORCE_SAVE_MODE = "Full" end)
+	pcall(function() _G.FORCE_SAVE_FULL = true end)
 end
 
-pcall(force_disable_filtering_and_ignores)
+pcall(force_force_full_save_settings)
 
 local function string_find(s, pattern)
 	return string.find(s, pattern, nil, true)
@@ -571,6 +675,9 @@ Binary_Descriptors = {
 		local __PACK_F32 = Binary_Descriptors.__PACK_F32
 		local position = __PACK_F32(X, Y, Z)
 		buffer.copy(b, 0, position)
+		-- buffer.writef32(b, 0, X)
+		-- buffer.writef32(b, 4, Y)
+		-- buffer.writef32(b, 8, Z)
 
 		if rotation_ID then
 			buffer.writeu8(b, 12, rotation_ID)
@@ -583,6 +690,18 @@ Binary_Descriptors = {
 			buffer.copy(b, 13 + 12, yBasis)
 			local zBasis = __PACK_F32(R20, R21, R22)
 			buffer.copy(b, 13 + 24, zBasis)
+
+			-- buffer.writef32(b, 13, R00)
+			-- buffer.writef32(b, 17, R01)
+			-- buffer.writef32(b, 21, R02)
+
+			-- buffer.writef32(b, 25, R10)
+			-- buffer.writef32(b, 29, R11)
+			-- buffer.writef32(b, 33, R12)
+
+			-- buffer.writef32(b, 37, R20)
+			-- buffer.writef32(b, 41, R21)
+			-- buffer.writef32(b, 45, R22)
 		end
 
 		return b, len
