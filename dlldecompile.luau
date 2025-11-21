@@ -571,7 +571,7 @@ XML_Descriptors = {
 
 		local Converted = ""
 
-		for _, keypoint in raw.Keypoints do
+		for _, keypoint in ipairs(raw.Keypoints) do
 			local Value = keypoint.Value
 
 			Converted ..= keypoint.Time .. " " .. (valueFormatter and valueFormatter(Value) or __EXTREME_RANGE(Value) .. " " .. __EXTREME_RANGE(
@@ -914,7 +914,7 @@ do
 
 			local ClassExceptions = ClassPropertyExceptions[ClassName]
 
-			for _, Member in API_Class.Members do
+			for _, Member in ipairs(API_Class.Members) do
 				if Member.MemberType == "Property" then
 					local Serialization = Member.Serialization
 
@@ -1384,7 +1384,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 	}
 
 	local function CheckAlias(searchAlias)
-		for option, alias in OPTIONS.OptionsAliases do
+		for option, alias in pairs(OPTIONS.OptionsAliases) do
 			if searchAlias == alias then
 				return option
 			end
@@ -2688,7 +2688,7 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 						ignoreCharacter(player)
 					end)
 				)
-				for _, player in Players:GetPlayers() do
+				for _, player in ipairs(Players:GetPlayers()) do
 					ignoreCharacter(player)
 				end
 			else
