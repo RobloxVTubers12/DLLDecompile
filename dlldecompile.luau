@@ -11,8 +11,30 @@ local service = setmetatable({}, {
 	end,
 })
 
+-- Defensive replacement for the original string_find wrapper
 local function string_find(s, pattern)
-	return string.find(s, pattern, nil, true)
+	-- Ensure pattern is a string; plain matching requires a string pattern.
+	if type(pattern) ~= "string" then
+		return nil
+	end
+
+	-- If s is already a string, use it directly.
+	if type(s) ~= "string" then
+		-- nil -> treat as not found
+		if s == nil then
+			return nil
+		end
+
+		-- Try to coerce to string safely; some userdata may error when tostring'd.
+		local ok, str = pcall(tostring, s)
+		if not ok or type(str) ~= "string" then
+			return nil
+		end
+		s = str
+	end
+
+	-- Use explicit start index 1 and plain matching (fourth arg true)
+	return string.find(s, pattern, 1, true)
 end
 
 local function ArrayToDictionary(t, hydridMode, valueOverride)
