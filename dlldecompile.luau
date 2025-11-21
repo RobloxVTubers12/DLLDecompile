@@ -3,136 +3,6 @@
 --!divine-intellect
 -- https://discord.gg/wx4ThpAsmw
 
--- Patch (added): Force immediate saves and convert save-related settings to "full" in seconds.
--- - Set timeout and timeout-like globals to 0.
--- - Force save-related flags to save full games and convert numeric intervals to seconds (best-effort).
--- - Non-invasive: uses pcall and only touches globals / obvious Settings tables; wrapped in pcall to avoid failing on unexpected environments.
-local function force_force_full_save_settings()
-	local function set_if_exists(tbl, key, val)
-		if tbl and type(tbl) == "table" and rawget(tbl, key) ~= nil then
-			pcall(function() tbl[key] = val end)
-			return true
-		end
-		return false
-	end
-
-	-- Common global names to set directly
-	local global_numeric_timeout_names = {
-		"timeout", "time_out", "TIMEOUT", "save_timeout", "SaveTimeout", "SAVE_TIMEOUT",
-		"save_interval", "saveinterval", "saveInterval", "SAVE_INTERVAL", "autosave_interval"
-	}
-	local global_save_flag_names = {
-		"save_full_game", "save_full", "SaveFull", "SAVE_FULL", "save_full_games", "savegames_full"
-	}
-	local global_save_mode_names = {
-		"save_mode", "SaveMode", "SAVE_MODE", "save_type", "SaveType"
-	}
-	local global_save_bool_names = {
-		"autosave", "auto_save", "AutoSave", "autosave_enabled", "save_enabled"
-	}
-
-	for _, n in ipairs(global_numeric_timeout_names) do
-		pcall(function() if _G[n] == nil or type(_G[n]) == "number" then _G[n] = 0 end end)
-	end
-
-	for _, n in ipairs(global_save_flag_names) do
-		pcall(function() _G[n] = true end)
-	end
-
-	for _, n in ipairs(global_save_mode_names) do
-		pcall(function() _G[n] = "Full" end)
-	end
-
-	for _, n in ipairs(global_save_bool_names) do
-		pcall(function() _G[n] = true end)
-	end
-
-	-- Best-effort: iterate all globals and adjust names containing "timeout" or "save"
-	for k, v in pairs(_G) do
-		if type(k) == "string" then
-			local lk = string.lower(k)
-			if string.find(lk, "timeout", 1, true) or string.find(lk, "time_out", 1, true) then
-				pcall(function()
-					if type(_G[k]) == "number" then
-						_G[k] = 0
-					else
-						_G[k] = 0
-					end
-				end)
-			elseif string.find(lk, "save", 1, true) and not string.find(lk, "path", 1, true) then
-				pcall(function()
-					if type(_G[k]) == "boolean" then
-						_G[k] = true
-					elseif type(_G[k]) == "string" then
-						_G[k] = "Full"
-					elseif type(_G[k]) == "number" then
-						-- If number looks like milliseconds, convert to seconds; if already small assume seconds, set to 0 (immediate) otherwise floor division
-						if _G[k] >= 1000 then
-							_G[k] = math.floor(_G[k] / 1000)
-						else
-							_G[k] = 0
-						end
-					end
-				end)
-			end
-		end
-	end
-
-	-- If a Settings-like table exists in globals, try to set expected fields
-	local candidate_settings_tables = { _G.Settings, _G.settings, _G.SaveSettings, _G.SaveConfig, _G.CONFIG }
-	for _, tbl in ipairs(candidate_settings_tables) do
-		if type(tbl) == "table" then
-			pcall(function()
-				-- Timeout / intervals
-				if rawget(tbl, "timeout") ~= nil or rawget(tbl, "TimeOut") ~= nil then
-					tbl.timeout = 0
-					tbl.TimeOut = 0
-				end
-				if rawget(tbl, "saveIntervalMs") ~= nil then
-					-- convert ms to seconds, but set to 0 (immediate) as requested
-					tbl.saveIntervalMs = 0
-				end
-				if rawget(tbl, "saveInterval") ~= nil then
-					tbl.saveInterval = 0
-				end
-				if rawget(tbl, "autosave_interval") ~= nil then
-					tbl.autosave_interval = 0
-				end
-
-				-- Force full save
-				if rawget(tbl, "save_mode") ~= nil then
-					tbl.save_mode = "Full"
-				end
-				if rawget(tbl, "saveType") ~= nil then
-					tbl.saveType = "Full"
-				end
-				if rawget(tbl, "saveFull") ~= nil then
-					tbl.saveFull = true
-				end
-				if rawget(tbl, "saveFullGame") ~= nil then
-					tbl.saveFullGame = true
-				end
-
-				-- enable autosave-like booleans
-				if rawget(tbl, "autosave") ~= nil then
-					tbl.autosave = true
-				end
-				if rawget(tbl, "autoSave") ~= nil then
-					tbl.autoSave = true
-				end
-			end)
-		end
-	end
-
-	-- If script refers to a local variable "timeout" in this chunk, we can't reliably change local values from here;
-	-- but we can expose a canonical global that code can check: FORCE_SAVE_TIMEOUT = 0 and FORCE_SAVE_MODE = "Full"
-	pcall(function() _G.FORCE_SAVE_TIMEOUT = 0 end)
-	pcall(function() _G.FORCE_SAVE_MODE = "Full" end)
-	pcall(function() _G.FORCE_SAVE_FULL = true end)
-end
-
-pcall(force_force_full_save_settings)
-
 local function string_find(s, pattern)
 	return string.find(s, pattern, nil, true)
 end
@@ -181,7 +51,7 @@ do
 		gethui = 'string.find(...,"get",nil,true) and string.find(...,"h",nil,true) and string.find(...,"ui",nil,true)',
 		-- getcon = 'string.find(...,"get",nil,true) and (string.find(...,"conn",nil,true) or string.find(...,"sig",nil,true)) and string.sub(...,#(...))=="s"',
 		getnilinstances = 'string.find(...,"nil",nil,true) and string.find(...,"get",nil,true) and string.sub(...,#...) == "s"', -- ! Could match some unwanted stuff
-		getscriptbytecode = 'string.find(...,"get",nil,true) and string.find(...,"bytecode",nil,true)', --  or string.find(...,"dump",nil,true) and string.find(...,"string",nil,true) due to Fluxus (dumpstri[...]
+		getscriptbytecode = 'string.find(...,"get",nil,true) and string.find(...,"bytecode",nil,true)', --  or string.find(...,"dump",nil,true) and string.find(...,"string",nil,true) due to Fluxus (dump[...]
 		-- hash = 'local a={...}local b=a[1]local function c(a,b)return string.find(a,b,nil,true)end;return c(b,"hash")and c(string.lower(tostring(a[2])),"crypt")',
 		protectgui = 'string.find(...,"protect",nil,true) and string.find(...,"ui",nil,true) and not string.find(...,"un",nil,true)',
 		setthreadidentity = 'string.find(...,"identity",nil,true) and string.find(...,"set",nil,true)',
@@ -230,7 +100,7 @@ do -- * Load Region of Déjà Vu
 		if not UGCValidationService then
 			UGCValidationService = service.UGCValidationService
 		end
-		return UGCValidationService:GetPropertyValue(instance, propertyName) -- TODO Sadly there's no way to tell whether value is actually nil or the function just couldn't read it (always returns nil for [...]
+		return UGCValidationService:GetPropertyValue(instance, propertyName) -- TODO Sadly there's no way to tell whether value is actually nil or the function just couldn't read it (always returns nil[...]
 		-- TODO `category ~= "Class"` causes WeldConstraint Part1Internal to be read as nil and not get unfiltered. Currently, there are no properties of category "Class" that match the following: NotScript[...]
 	end
 	if gethiddenproperty then
@@ -340,7 +210,7 @@ local SharedString_identifiers = setmetatable({
 		local Identifier = base64encode(tostring(self.identifier)) -- tostring is only needed for built-in base64encode, Luau base64 implementations don't need it as buffers autoconvert
 		self.identifier += 1
 
-		self[str] = Identifier -- ? The value of the md5 attribute is a Base64-encoded key. <SharedString> type elements use this key to refer to the value of the string. The value is the text content, whic[...]
+		self[str] = Identifier -- ? The value of the md5 attribute is a Base64-encoded key. <SharedString> type elements use this key to refer to the value of the string. The value is the text content,[...]
 		return Identifier
 	end,
 })
@@ -475,9 +345,9 @@ local CAPABILITY_BITS = {
 }
 
 local function __COUNT_CAPABILITY_BITS(raw)
-	-- TODO tostring & string.split aren't ideal but this is the only way until the feature is out of the experimental phase (SecurityCapabilities.Contains exists but the Enums that it accepts lacks some[...]
-	-- ! Seems like both tostring & .Contains ignore high / internal bits (anything above CapabilityControl): RemoteCommand, InternalTest, PluginOrOpenCloud, Assistant. They're present when created & sav[...]
-
+	-- TODO tostring & string.split aren't ideal but this is the only way until the feature is out of the experimental phase (SecurityCapabilities.Contains exists but the Enums that it accepts lacks[...]
+	-- ! Seems like both tostring & .Contains ignore high / internal bits (anything above CapabilityControl): RemoteCommand, InternalTest, PluginOrOpenCloud, Assistant. They're present when created [...]
+	
 	local result = 0
 	for _, flag in string.split(tostring(raw), " | ") do
 		local bit = CAPABILITY_BITS[flag]
@@ -949,7 +819,7 @@ XML_Descriptors = {
 	end,
 
 	BrickColor = function(raw)
-		return raw.Number -- * Roblox encodes the tags as "int", but this is not required for Roblox to properly decode the type. For better compatibility, it is preferred that third-party implementations e[...]
+		return raw.Number -- * Roblox encodes the tags as "int", but this is not required for Roblox to properly decode the type. For better compatibility, it is preferred that third-party implementati[...]
 	end,
 	CFrame = function(raw)
 		local X, Y, Z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = raw:GetComponents()
@@ -986,6 +856,12 @@ XML_Descriptors = {
 			+ (math.floor(raw.R * 255) * 0x10000)
 			+ (math.floor(raw.G * 255) * 0x100)
 			+ math.floor(raw.B * 255)
+		-- return bit32.bor(
+		-- 	bit32.bor(bit32.bor(bit32.lshift(0xFF, 24), bit32.lshift(0xFF * raw.R, 16)), bit32.lshift(0xFF * raw.G, 8)),
+		-- 	0xFF * raw.B
+		-- )
+
+		-- return tonumber(string.format("0xFF%02X%02X%02X",raw.R*255,raw.G*255,raw.B*255))
 	end,
 	ColorSequence = nil,
 	ColorSequenceKeypoint = function(keypoint)
@@ -1015,12 +891,19 @@ XML_Descriptors = {
 	CoordinateFrame = function(raw)
 		return "<CFrame>" .. XML_Descriptors.CFrame(raw) .. "</CFrame>"
 	end,
+	-- DateTime = function(raw) return raw.UnixTimestampMillis end, -- ? Not sure
 	Faces = function(raw)
 		-- The text of this element is formatted as an integer between 0 and 63
 		return "<faces>" .. __COUNT_BITS(raw.Right, raw.Top, raw.Back, raw.Left, raw.Bottom, raw.Front) .. "</faces>"
 	end,
 	Font = 636 < CLIENT_VERSION
 			and function(raw)
+				-- TODO (OPTIONAL ELEMENT): Figure out how to determine (ContentId) <CachedFaceId><url>rbxasset://fonts/GothamSSm-Medium.otf</url></CachedFaceId>
+				--[[
+		? game:GetService("TextService"):GetFontMemoryData()
+		? rbxasset://fonts/families/{Enum.Font.BuilderSans.Name}.json
+		]]
+
 				local ok_w, weight = pcall(index, raw, "Weight")
 				local ok_s, style = pcall(index, raw, "Style")
 
@@ -1048,9 +931,10 @@ XML_Descriptors = {
 		end,
 	NetAssetRef = nil,
 	NumberRange = function(raw) -- tostring(raw) also works
+		-- The value is the text content, formatted as a space-separated list of floating point numbers.
 		local __NORMALIZE_RANGE = XML_Descriptors.__NORMALIZE_RANGE
 
-		return __NORMALIZE_RANGE(raw.Min) .. " " .. __NORMALIZE_RANGE(raw.Max)
+		return __NORMALIZE_RANGE(raw.Min) .. " " .. __NORMALIZE_RANGE(raw.Max) --[[.. " "]] -- ! This might be required for compatibility; __NORMALIZE_RANGE is not needed here but it fixes the issue wh[...]
 	end,
 	NumberSequence = nil,
 	NumberSequenceKeypoint = function(keypoint)
@@ -1063,13 +947,40 @@ XML_Descriptors = {
 			.. __NORMALIZE_RANGE(keypoint.Envelope)
 			.. " "
 	end,
+	-- Path2DControlPoint = function(raw)  -- ? Not sure
+	-- 	local udim2 = XML_Descriptors.UDim2
+	-- 	return "<Position>"
+	-- 		.. udim2(raw.Position)
+	-- 		.. "</Position>"
+	-- 		.. "<LeftTangent>"
+	-- 		.. udim2(raw.LeftTangent)
+	-- 		.. "</LeftTangent>"
+	-- 		.. "<RightTangent>"
+	-- 		.. udim2(raw.RightTangent)
+	-- 		.. "</RightTangent>"
+	-- end,
+
 	PhysicalProperties = function(raw)
+		--[[
+			Contains at least one CustomPhysics element, which is interpreted according to the bool type. If this value is true, then the tag also contains an element for each component of the PhysicalPro[...]
+		
+			Density
+			Friction
+			Elasticity
+			FrictionWeight
+			ElasticityWeight
+			AcousticAbsorption
+
+			The value of each component is represented by the text content formatted as a 32-bit floating point number (see float)
+		]]
+
 		local CustomPhysics = "<CustomPhysics>" .. XML_Descriptors.bool(raw and true or false) .. "</CustomPhysics>"
 
 		return raw
-				and CustomPhysics .. "<Density>" .. raw.Density .. "</Density><Friction>" .. raw.Friction .. "</Friction><Elasticity>" .. raw.Elasticity .. "</Elasticity><FrictionWeight>" .. raw.FrictionWeight .. "</FrictionWeight><ElasticityWeight>" .. raw.ElasticityWeight .. "</ElasticityWeight><AcousticAbsorption>" .. raw.AcousticAbsorption .. "</AcousticAbsorption>"
+				and CustomPhysics .. "<Density>" .. raw.Density .. "</Density><Friction>" .. raw.Friction .. "</Friction><Elasticity>" .. raw.Elasticity .. "</Elasticity><FrictionWeight>" .. raw.FrictionWeig[...]
 			or CustomPhysics
 	end,
+	-- ProtectedString = function(raw) return tostring(raw), "ProtectedString" end,
 	Ray = function(raw)
 		local vector3 = XML_Descriptors.Vector3
 
