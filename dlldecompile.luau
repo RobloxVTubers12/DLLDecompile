@@ -2778,17 +2778,6 @@ local function synsaveinstance(CustomOptions, CustomOptions2)
 					StatusText.Text = string.format("Saved Game File! Time: %.3f seconds; Size: %s", elapse_t, get_size_format())
 					StatusText.TextColor3 = Color3.new(0, 1)
 					task.wait(Log10 * 2 + ExtraTime)
-				else
-					if Loading then
-						task.cancel(Loading)
-						Loading = nil
-					end
-					StatusText.Text = "Errors Found! Check F9 console for more info"
-					StatusText.TextColor3 = Color3.new(1)
-					warn("Error found while saving:")
-					warn(err)
-					task.wait(Log10 + ExtraTime)
-				end
 				StatusText:Destroy()
 			end)
 		end
